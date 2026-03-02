@@ -1,8 +1,15 @@
-import ollama
 from bot.config import Config
 from bot.logger import setup_logger
 
 logger = setup_logger(__name__)
+
+# Try to import ollama (optional for cloud deployment)
+try:
+    import ollama
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
+    logger.warning("Ollama not available, will use Gemini or fallback content")
 
 class ContentGenerator:
     def __init__(self):
@@ -74,18 +81,22 @@ Keep it practical and easy to implement."""
                 except Exception as e:
                     logger.warning(f"Gemini failed, trying Ollama: {e}")
             
-            # Fallback to Ollama
-            response = ollama.chat(
-                model=self.model,
-                messages=[{
-                    'role': 'user',
-                    'content': prompt
-                }]
-            )
-            
-            content = response['message']['content']
-            logger.info(f"Content generated successfully with Ollama for {topic}")
-            return self._format_content(content, topic)
+            # Fallback to Ollama if available
+            if OLLAMA_AVAILABLE:
+                response = ollama.chat(
+                    model=self.model,
+                    messages=[{
+                        'role': 'user',
+                        'content': prompt
+                    }]
+                )
+                
+                content = response['message']['content']
+                logger.info(f"Content generated successfully with Ollama for {topic}")
+                return self._format_content(content, topic)
+            else:
+                logger.info(f"Ollama not available, using fallback content for {topic}")
+                return self._get_fallback_content(topic)
             
         except Exception as e:
             logger.error(f"Error generating content: {e}")
