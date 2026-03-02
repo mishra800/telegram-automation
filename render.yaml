@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: telegram-automation
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHANNEL_ID
+        sync: false
+      - key: TELEGRAM_GROUP_ID
+        sync: false
+      - key: OLLAMA_MODEL
+        value: llama3
+      - key: USE_LOCAL_SD
+        value: false
+      - key: POST_TIMES
+        value: 09:00,14:00,20:00
+      - key: TIMEZONE
+        value: UTC

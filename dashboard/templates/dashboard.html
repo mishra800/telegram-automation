@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Content Automation Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value {
+            color: #333;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        
+        .chart-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .chart-img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+        
+        .topics-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .topics-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .topic-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+        
+        .topic-item:hover {
+            background: #e9ecef;
+        }
+        
+        .topic-name {
+            font-weight: 600;
+            color: #333;
+            text-transform: capitalize;
+        }
+        
+        .topic-stats {
+            display: flex;
+            gap: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 50px;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Telegram Content Automation Dashboard</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Posts</div>
+                <div class="stat-value" id="total-posts">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Views</div>
+                <div class="stat-value" id="total-views">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Forwards</div>
+                <div class="stat-value" id="total-forwards">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Best Topic</div>
+                <div class="stat-value" id="best-topic" style="font-size: 1.5em;">-</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h2>📈 Engagement Trends</h2>
+            <img id="engagement-chart" class="chart-img" src="" alt="Loading chart...">
+        </div>
+        
+        <div class="topics-container">
+            <h2>🎯 Topic Performance</h2>
+            <div id="topics-list"></div>
+        </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+    
+    <script>
+        async function loadData() {
+            try {
+                const statsResponse = await fetch('/api/stats');
+                const stats = await statsResponse.json();
+                
+                document.getElementById('total-posts').textContent = stats.total_posts.toLocaleString();
+                document.getElementById('total-views').textContent = stats.total_views.toLocaleString();
+                document.getElementById('total-forwards').textContent = stats.total_forwards.toLocaleString();
+                document.getElementById('best-topic').textContent = stats.best_topic.replace('_', ' ');
+                
+                const chartResponse = await fetch('/api/engagement-chart');
+                const chartData = await chartResponse.json();
+                if (chartData.chart) {
+                    document.getElementById('engagement-chart').src = chartData.chart;
+                }
+                
+                const topicsResponse = await fetch('/api/topic-performance');
+                const topics = await topicsResponse.json();
+                
+                const topicsList = document.getElementById('topics-list');
+                topicsList.innerHTML = topics.map(topic => `
+                    <div class="topic-item">
+                        <div class="topic-name">${topic.topic.replace('_', ' ')}</div>
+                        <div class="topic-stats">
+                            <span>📝 ${topic.post_count} posts</span>
+                            <span>👁️ ${Math.round(topic.avg_views)} avg views</span>
+                            <span>📊 ${Math.round(topic.engagement_score)} score</span>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        loadData();
+        setInterval(loadData, 60000);
+    </script>
+</body>
+</html>
