@@ -1,16 +1,49 @@
+# Environment
 .env
+*.env.local
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.so
+*.egg-info/
+dist/
+build/
+
+# Databases
 *.db
 *.sqlite
 *.sqlite3
+*.backup
+
+# Generated content
 logs/
 images/
+videos/
+backups/
+
+# Models
 models/
+
+# Virtual environments
 venv/
 env/
 .venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+analytics/trend_cache.json

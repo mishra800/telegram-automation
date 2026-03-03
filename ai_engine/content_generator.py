@@ -1,3 +1,4 @@
+from datetime import datetime
 from bot.config import Config
 from bot.logger import setup_logger
 
@@ -28,48 +29,110 @@ class ContentGenerator:
                 logger.error(f"Error initializing Gemini: {e}")
                 self.use_gemini = False
         
-    def generate_content(self, topic):
+    def generate_content(self, topic, trending_keywords=None, funnel_stage='value'):
+        """Generate content with context awareness and uniqueness"""
+        
+        # Add context for better uniqueness
+        current_date = datetime.now().strftime("%B %Y")
+        trending_context = f"Trending: {', '.join(trending_keywords[:3])}" if trending_keywords else ""
+        
+        # Stage-specific content guidelines
+        stage_instructions = {
+            'viral': "Make it controversial, emotional, or surprising. Use pattern interrupts.",
+            'value': "Provide actionable, practical value. Be specific with numbers and examples.",
+            'authority': "Include data, case studies, or expert insights. Build credibility.",
+            'soft_promotion': "Tell a relatable story about a problem. Hint at solutions naturally.",
+            'strong_cta': "Focus on transformation and urgency. Clear benefits and social proof."
+        }
+        
+        stage_guide = stage_instructions.get(funnel_stage, stage_instructions['value'])
+        
         prompts = {
-            'motivational': """Generate a motivational post for social media with:
-- A catchy headline (max 10 words)
-- 5-7 short bullet points with actionable advice
-- A call-to-action line
-- 3-5 relevant hashtags
-Keep it inspiring and practical.""",
+            'motivational': f"""Generate a UNIQUE motivational post for {current_date}. {trending_context}
+
+REQUIREMENTS:
+- Hook: Start with a surprising fact, question, or bold statement
+- Story: Include a micro-story or specific example (not generic advice)
+- Value: 3-5 specific, actionable steps with numbers/metrics
+- Emotion: Use power words that trigger emotion
+- CTA: End with a thought-provoking question or challenge
+- Hashtags: 3-5 trending + niche hashtags
+
+STAGE FOCUS: {stage_guide}
+
+AVOID: Generic advice, clichés, overused phrases
+TONE: Conversational, authentic, slightly provocative
+LENGTH: 150-250 words""",
             
-            'tech_news': """Generate a tech news summary post with:
-- A catchy headline about latest tech trends
-- 5-7 bullet points covering recent developments
-- A thought-provoking question as CTA
-- 3-5 tech-related hashtags
-Focus on AI, cloud, or software development.""",
+            'tech_news': f"""Generate a UNIQUE tech news post for {current_date}. {trending_context}
+
+REQUIREMENTS:
+- Hook: Start with "Breaking:" or surprising stat about recent tech development
+- Context: Explain WHY this matters (not just what happened)
+- Impact: 3-4 specific implications for developers/businesses
+- Insight: Add a contrarian or unique perspective
+- CTA: Ask for predictions or opinions
+- Hashtags: Mix trending tech + niche tags
+
+STAGE FOCUS: {stage_guide}
+
+AVOID: Press release language, obvious observations
+TONE: Insider knowledge, analytical, forward-thinking
+LENGTH: 150-250 words""",
             
-            'ai_updates': """Generate an AI industry update post with:
-- A compelling headline about AI advancements
-- 5-7 bullet points on recent AI breakthroughs
-- A call-to-action encouraging discussion
-- 3-5 AI-related hashtags
-Make it informative yet accessible.""",
+            'ai_updates': f"""Generate a UNIQUE AI industry post for {current_date}. {trending_context}
+
+REQUIREMENTS:
+- Hook: Start with a mind-blowing AI capability or prediction
+- Breakdown: Explain complex AI concept in simple terms with analogy
+- Applications: 3-4 specific real-world use cases with examples
+- Controversy: Address a debate or ethical consideration
+- CTA: Ask how readers are using AI or their concerns
+- Hashtags: Mix AI trends + specific tools/models
+
+STAGE FOCUS: {stage_guide}
+
+AVOID: Hype without substance, fear-mongering
+TONE: Informed, balanced, practical
+LENGTH: 150-250 words""",
             
-            'data_science': """Generate a data science tips post with:
-- A catchy headline about data science
-- 5-7 practical tips or insights
-- A call-to-action for learning
-- 3-5 data science hashtags
-Focus on practical skills and tools.""",
+            'data_science': f"""Generate a UNIQUE data science post for {current_date}. {trending_context}
+
+REQUIREMENTS:
+- Hook: Start with a counterintuitive data insight or mistake
+- Lesson: Share a specific technique/approach with code concept
+- Example: Include a real-world scenario or case study
+- Tools: Mention 2-3 specific tools/libraries with use cases
+- CTA: Ask about readers' biggest data challenge
+- Hashtags: Mix data science + specific tools
+
+STAGE FOCUS: {stage_guide}
+
+AVOID: Textbook definitions, obvious tips
+TONE: Experienced practitioner, helpful, technical but accessible
+LENGTH: 150-250 words""",
             
-            'productivity': """Generate a productivity tips post with:
-- A catchy headline about productivity
-- 5-7 actionable productivity hacks
-- A motivating call-to-action
-- 3-5 productivity hashtags
-Keep it practical and easy to implement."""
+            'productivity': f"""Generate a UNIQUE productivity post for {current_date}. {trending_context}
+
+REQUIREMENTS:
+- Hook: Start with a productivity myth or surprising research finding
+- Framework: Share a specific system/method with clear steps
+- Science: Include psychological principle or research backing
+- Example: Show before/after or specific results
+- CTA: Challenge readers to try it for X days
+- Hashtags: Mix productivity + specific methods
+
+STAGE FOCUS: {stage_guide}
+
+AVOID: Generic "wake up early" advice, obvious tips
+TONE: Science-backed, practical, results-focused
+LENGTH: 150-250 words"""
         }
         
         prompt = prompts.get(topic, prompts['motivational'])
         
         try:
-            logger.info(f"Generating content for topic: {topic}")
+            logger.info(f"Generating content for topic: {topic}, stage: {funnel_stage}")
             
             # Try Gemini first if enabled
             if self.use_gemini and self.gemini_api_key:

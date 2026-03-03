@@ -45,7 +45,16 @@ class AutomationSystem:
             
             logger.info("=" * 60)
             logger.info("System is running!")
-            logger.info(f"Scheduled posts at: {', '.join(Config.POST_TIMES)}")
+            if Config.GROWTH_MODE:
+                logger.info(f"Mode: GROWTH (Dynamic posting based on followers)")
+                logger.info(f"Current: {self.scheduler.current_posts_per_day} posts/day for {self.scheduler.current_follower_count} followers")
+                logger.info(f"Thresholds: <{Config.FOLLOWER_THRESHOLD_LOW}={Config.POSTS_PER_DAY_LOW}/day, "
+                          f"<{Config.FOLLOWER_THRESHOLD_HIGH}={Config.POSTS_PER_DAY_MEDIUM}/day, "
+                          f"else={Config.POSTS_PER_DAY_HIGH}/day")
+            else:
+                logger.info(f"Mode: NORMAL ({Config.POSTS_PER_DAY_HIGH} posts/day)")
+            logger.info(f"Timezone: {Config.TIMEZONE}")
+            logger.info(f"Min interval: {Config.MIN_POST_INTERVAL_MINUTES} minutes")
             logger.info(f"Dashboard: http://localhost:{Config.DASHBOARD_PORT}")
             logger.info("Press Ctrl+C to stop")
             logger.info("=" * 60)
@@ -123,6 +132,39 @@ def main():
             print("=" * 60)
             return
         
+        elif command == "auto-response":
+            from bot.telegram_bot import start_auto_response_system
+            print("\n" + "=" * 60)
+            print("STARTING AUTO-RESPONSE SYSTEM")
+            print("=" * 60)
+            print("Listening for incoming messages...")
+            print("Press Ctrl+C to stop")
+            print("=" * 60 + "\n")
+            start_auto_response_system()
+            return
+        
+        elif command == "conversation-stats":
+            from bot.telegram_bot import get_conversation_stats_sync
+            days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+            stats = get_conversation_stats_sync(days)
+            print("\n" + "=" * 60)
+            print(f"CONVERSATION STATISTICS (Last {days} days)")
+            print("=" * 60)
+            if stats:
+                total = stats[0][0] if stats else 0
+                unique = stats[0][1] if stats else 0
+                print(f"Total Conversations: {total}")
+                print(f"Unique Users: {unique}")
+                print("\nKeyword Breakdown:")
+                for stat in stats:
+                    keyword = stat[2]
+                    count = stat[3]
+                    print(f"  {keyword}: {count}")
+            else:
+                print("No conversations recorded yet")
+            print("=" * 60)
+            return
+        
         elif command == "help":
             print("""
 Telegram Content Automation System - Commands:
@@ -132,6 +174,8 @@ Telegram Content Automation System - Commands:
   python main.py test-content [topic]  Test content generation
   python main.py test-image [topic] [title]  Test image generation
   python main.py stats              Show system statistics
+  python main.py auto-response      Start auto-response system
+  python main.py conversation-stats [days]  Show conversation statistics
   python main.py help               Show this help message
 
 Available topics:

@@ -22,8 +22,16 @@ class Config:
     USE_LOCAL_SD = os.getenv('USE_LOCAL_SD', 'true').lower() == 'true'
     
     # Scheduling
-    POST_TIMES = os.getenv('POST_TIMES', '09:00,14:00,20:00').split(',')
     TIMEZONE = os.getenv('TIMEZONE', 'UTC')
+    GROWTH_MODE = os.getenv('GROWTH_MODE', 'true').lower() == 'true'
+    MIN_POST_INTERVAL_MINUTES = int(os.getenv('MIN_POST_INTERVAL_MINUTES', 30))
+    
+    # Dynamic posting frequency thresholds
+    FOLLOWER_THRESHOLD_LOW = int(os.getenv('FOLLOWER_THRESHOLD_LOW', 1000))
+    FOLLOWER_THRESHOLD_HIGH = int(os.getenv('FOLLOWER_THRESHOLD_HIGH', 10000))
+    POSTS_PER_DAY_LOW = int(os.getenv('POSTS_PER_DAY_LOW', 18))
+    POSTS_PER_DAY_MEDIUM = int(os.getenv('POSTS_PER_DAY_MEDIUM', 10))
+    POSTS_PER_DAY_HIGH = int(os.getenv('POSTS_PER_DAY_HIGH', 6))
     
     # Analytics
     ANALYTICS_CHECK_DELAY = int(os.getenv('ANALYTICS_CHECK_DELAY', 24))
@@ -35,6 +43,7 @@ class Config:
     # Paths
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     IMAGES_DIR = os.path.join(BASE_DIR, 'images')
+    VIDEOS_DIR = os.path.join(BASE_DIR, 'videos')
     LOGS_DIR = os.path.join(BASE_DIR, 'logs')
     DB_PATH = os.path.join(BASE_DIR, 'analytics', 'analytics.db')
     
@@ -55,5 +64,6 @@ class Config:
             raise ValueError("At least one of TELEGRAM_CHANNEL_ID or TELEGRAM_GROUP_ID is required")
         
         os.makedirs(cls.IMAGES_DIR, exist_ok=True)
+        os.makedirs(cls.VIDEOS_DIR, exist_ok=True)
         os.makedirs(cls.LOGS_DIR, exist_ok=True)
         os.makedirs(os.path.dirname(cls.DB_PATH), exist_ok=True)
