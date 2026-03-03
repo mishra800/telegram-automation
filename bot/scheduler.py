@@ -1,4 +1,3 @@
-import random
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime
@@ -9,6 +8,9 @@ from ai_engine.image_generator import ImageGenerator
 from bot.telegram_bot import post_content_sync
 from analytics.database import AnalyticsDB
 from analytics.collector import AnalyticsCollector
+from monetization.viral_content import ViralContentEngine
+from monetization.affiliate_manager import AffiliateManager
+from monetization.engagement_tracker import EngagementTracker
 
 logger = setup_logger(__name__)
 
@@ -19,6 +21,9 @@ class ContentScheduler:
         self.image_gen = ImageGenerator()
         self.db = AnalyticsDB()
         self.collector = AnalyticsCollector()
+        self.viral_engine = ViralContentEngine()
+        self.affiliate_mgr = AffiliateManager()
+        self.engagement_tracker = EngagementTracker()
         
     def start(self):
         for post_time in Config.POST_TIMES:
@@ -59,7 +64,35 @@ class ContentScheduler:
             topic = self._select_topic()
             logger.info(f"Selected topic: {topic}")
             
-            content = self.content_gen.generate_content(topic)
+            # Decide content type (regular or engagement post)
+            import random
+            is_engagement_post = random.random() < 0.2  # 20% engagement posts
+            
+            if is_engagement_post:
+                # Create viral engagement post
+                post_types = ['question', 'poll', 'challenge']
+                post_type = random.choice(post_types)
+                content_text = self.viral_engine.create_engagement_post(topic, post_type)
+                content = {'text': content_text, 'topic': topic}
+                content_type = f'engagement_{post_type}'
+                logger.info(f"Created engagement post: {post_type}")
+            else:
+                # Generate regular content
+                content = self.content_gen.generate_content(topic)
+                content_type = 'regular'
+                
+                # Add viral elements
+                content['text'] = self.viral_engine.add_viral_elements(content['text'], topic)
+                
+                # Maybe add affiliate link
+                has_affiliate = self.affiliate_mgr.should_add_affiliate()
+                if has_affiliate:
+                    product = self.affiliate_mgr.get_affiliate_product(topic)
+                    if product:
+                        affiliate_cta = self.affiliate_mgr.format_affiliate_cta(product)
+                        content['text'] += affiliate_cta
+                        logger.info(f"Added affiliate: {product['name']}")
+            
             logger.info("Content generated")
             
             title = content['text'].split('\n')[0][:50]
@@ -70,12 +103,19 @@ class ContentScheduler:
             
             for result in results:
                 if result['success']:
-                    self.db.save_post(
+                    post_id = self.db.save_post(
                         result['message_id'],
                         result['chat_id'],
                         result['topic'],
                         result['target_type']
                     )
+                    
+                    # Track content type for analytics
+                    has_affiliate = 'affiliate' in content['text'].lower()
+                    self.engagement_tracker.track_post_performance(
+                        post_id, topic, content_type, has_affiliate, 0, 0, 0
+                    )
+                    
                     logger.info(
                         f"Posted successfully to {result['target_type']}: "
                         f"Message ID {result['message_id']}"

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import io
 import base64
 from analytics.database import AnalyticsDB
+from monetization.engagement_tracker import EngagementTracker
+from monetization.revenue_tracker import RevenueTracker
 from bot.config import Config
 from bot.logger import setup_logger
 
@@ -12,6 +14,8 @@ logger = setup_logger(__name__)
 
 app = Flask(__name__)
 db = AnalyticsDB()
+engagement_tracker = EngagementTracker()
+revenue_tracker = RevenueTracker()
 
 @app.route('/')
 def index():
@@ -21,6 +25,11 @@ def index():
 def get_stats():
     try:
         stats = db.get_dashboard_stats()
+        
+        # Add monetization stats
+        stats['total_revenue'] = revenue_tracker.get_total_revenue(30)
+        stats['revenue_sources'] = revenue_tracker.get_revenue_by_source(30)
+        
         return jsonify(stats)
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
@@ -33,6 +42,48 @@ def get_topic_performance():
         return jsonify(performance)
     except Exception as e:
         logger.error(f"Error getting topic performance: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/engagement-insights')
+def get_engagement_insights():
+    try:
+        insights = engagement_tracker.get_engagement_insights()
+        return jsonify(insights)
+    except Exception as e:
+        logger.error(f"Error getting engagement insights: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/revenue-chart')
+def get_revenue_chart():
+    try:
+        trend = revenue_tracker.get_revenue_trend(30)
+        
+        if not trend:
+            return jsonify({'chart': None})
+        
+        dates = [t['date'] for t in trend]
+        amounts = [t['amount'] for t in trend]
+        
+        plt.figure(figsize=(12, 6))
+        plt.plot(dates, amounts, marker='o', linewidth=2, markersize=6, color='#10b981')
+        plt.title('Revenue Trend (Last 30 Days)', fontsize=16, fontweight='bold')
+        plt.xlabel('Date', fontsize=12)
+        plt.ylabel('Revenue ($)', fontsize=12)
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        
+        chart_data = base64.b64encode(buf.read()).decode('utf-8')
+        plt.close()
+        
+        return jsonify({'chart': f'data:image/png;base64,{chart_data}'})
+        
+    except Exception as e:
+        logger.error(f"Error generating revenue chart: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/engagement-chart')
