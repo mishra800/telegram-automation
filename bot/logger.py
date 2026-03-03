@@ -8,6 +8,9 @@ def setup_logger(name):
     logger.setLevel(logging.INFO)
     
     if not logger.handlers:
+        # Ensure logs directory exists
+        os.makedirs(Config.LOGS_DIR, exist_ok=True)
+        
         log_file = os.path.join(
             Config.LOGS_DIR,
             f"{datetime.now().strftime('%Y%m%d')}.log"
