@@ -286,8 +286,9 @@ class ContentScheduler:
                 if queued_content:
                     logger.info("Using pre-generated content from queue")
                     content_text = queued_content['text']
-                    image_path = queued_content['image_path']
+                    media_path = queued_content['image_path']  # This is the image path from queue
                     content_type = queued_content['content_type']
+                    media_type = 'image'  # Queue only has images for now
                     
                     # Refill queue if running low
                     if self.content_queue.get_queue_size() < 10:
@@ -396,9 +397,9 @@ class ContentScheduler:
                     media_path = self.image_gen.generate_image(topic, title)
                     media_type = 'image'
                     logger.info(f"Image generated: {media_path}")
-            else:
-                # From queue - always image for now
-                media_type = 'image'
+            
+            # If using queued content, media_path and media_type are already set above
+            # No need to set them again here
             
             results = post_content_sync(content_text, media_path, topic, media_type=media_type)
             
