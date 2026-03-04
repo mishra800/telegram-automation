@@ -170,7 +170,7 @@ class TrendAnalyzer:
             try:
                 from pytrends.request import TrendReq
                 
-                pytrends = TrendReq(hl='en-US', tz=360)
+                pytrends = TrendReq(hl='en-US', tz=360, timeout=(10, 25), retries=2, backoff_factor=0.1)
                 
                 # Get trending searches
                 trending_searches = pytrends.trending_searches(pn='united_states')
@@ -193,9 +193,21 @@ class TrendAnalyzer:
                     'Artificial Intelligence', 'ChatGPT', 'Machine Learning',
                     'Python', 'JavaScript', 'Cloud Computing'
                 ])
+            except Exception as pytrends_error:
+                logger.warning(f"pytrends error: {pytrends_error}, using fallback")
+                # Fallback trending tech topics
+                keywords.extend([
+                    'Artificial Intelligence', 'ChatGPT', 'Machine Learning',
+                    'Python', 'JavaScript', 'Cloud Computing'
+                ])
         
         except Exception as e:
-            logger.error(f"Error fetching Google trends: {e}")
+            logger.warning(f"Google trends unavailable: {e}, using fallback")
+            # Fallback trending tech topics
+            keywords.extend([
+                'Artificial Intelligence', 'ChatGPT', 'Machine Learning',
+                'Python', 'JavaScript', 'Cloud Computing'
+            ])
         
         return keywords
     

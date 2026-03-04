@@ -21,10 +21,20 @@ class ContentGenerator:
         
         if self.use_gemini and self.gemini_api_key:
             try:
-                import google.generativeai as genai
+                import google.genai as genai
                 genai.configure(api_key=self.gemini_api_key)
                 self.gemini_model = genai.GenerativeModel('gemini-pro')
                 logger.info("Gemini Pro initialized successfully")
+            except ImportError:
+                # Fallback to old package if new one not available
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=self.gemini_api_key)
+                    self.gemini_model = genai.GenerativeModel('gemini-pro')
+                    logger.info("Gemini Pro initialized successfully (legacy package)")
+                except Exception as e:
+                    logger.error(f"Error initializing Gemini: {e}")
+                    self.use_gemini = False
             except Exception as e:
                 logger.error(f"Error initializing Gemini: {e}")
                 self.use_gemini = False
